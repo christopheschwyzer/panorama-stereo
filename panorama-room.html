@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Panorama</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<div id="example"></div>
+
+<script src="js/third-party/threejs/three.js"></script>
+<script src="js/third-party/threejs/StereoEffect.js"></script>
+<script src="js/third-party/threejs/DeviceOrientationControls.js"></script>
+<script src="js/third-party/threejs/OrbitControls.js"></script>
+
+<script>
+    var camera, scene, renderer;
+    var controls;
+    var element, container;
+
+    var clock = new THREE.Clock();
+
+    init();
+    animate();
+
+    function init() {
+        renderer = new THREE.WebGLRenderer();
+        element = renderer.domElement;
+        container = document.getElementById('example');
+        container.appendChild(element);
+
+        scene = new THREE.Scene();
+
+        camera = new THREE.PerspectiveCamera(90, 1, 0.001, 700);
+        camera.position.set(0, 10, 0);
+        scene.add(camera);
+
+        controls = new THREE.OrbitControls(camera, element);
+        controls.rotateUp(Math.PI / 4);
+        controls.target.set(
+                camera.position.x + 0.1,
+                camera.position.y,
+                camera.position.z
+        );
+        controls.noZoom = true;
+        controls.noPan = true;
+
+        function setOrientationControls(e) {
+            if (!e.alpha) {
+                return;
+            }
+
+            controls = new THREE.DeviceOrientationControls(camera, true);
+            controls.connect();
+            controls.update();
+
+            element.addEventListener('click', fullscreen, false);
+
+            window.removeEventListener('deviceorientation', setOrientationControls, true);
+        }
+
+        window.addEventListener('deviceorientation', setOrientationControls, true);
+
+
+        var light = new THREE.HemisphereLight(0x777777, 0x000000, 0.6);
+        scene.add(light);
+
+
+        // Plane
+        var textureGrid = THREE.ImageUtils.loadTexture(
+                'textures/patterns/checker.png'
+        );
+        textureGrid.wrapS = THREE.RepeatWrapping;
+        textureGrid.wrapT = THREE.RepeatWrapping;
+        textureGrid.repeat = new THREE.Vector2(50, 50);
+        textureGrid.anisotropy = renderer.getMaxAnisotropy();
+
+        var materialGrid = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            opacity: 0.7,
+            transparent: true,
+            specular: 0xffffff,
+            shininess: 20,
+            shading: THREE.FlatShading,
+            map: textureGrid
+        });
+
+        var geometryGrid = new THREE.PlaneGeometry(1000, 1000);
+
+        var meshGrid = new THREE.Mesh(geometryGrid, materialGrid);
+        meshGrid.rotation.x = -Math.PI / 2;
+
+        scene.add(meshGrid);
+        // End Plane
+
+
+        // Screen
+        var materialScreen = new THREE.MeshBasicMaterial({
+            color: 0xffffff
+        });
+
+        var geometryScreen = new THREE.PlaneGeometry(10, 10);
+
+        var meshScreen = new THREE.Mesh(geometryScreen, materialScreen);
+        meshScreen.position.set(10, 10, 0);
+        meshScreen.rotation.y = -90*(Math.PI/180);
+
+        scene.add(meshScreen);
+        // End Screen
+
+
+        // Background sphere
+        var geometry = new THREE.SphereGeometry(500, 60, 40);
+        geometry.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
+
+        var material = new THREE.MeshBasicMaterial({
+            map: THREE.ImageUtils.loadTexture('textures/room1.jpg')
+        });
+
+        var mesh = new THREE.Mesh(geometry, material);
+
+        scene.add(mesh);
+        // End Background Sphere
+
+
+        window.addEventListener('resize', resize, false);
+        setTimeout(resize, 1);
+    }
+
+    function resize() {
+        var width = container.offsetWidth;
+        var height = container.offsetHeight;
+
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(width, height);
+    }
+
+    function update(dt) {
+        resize();
+
+        camera.updateProjectionMatrix();
+
+        controls.update(dt);
+    }
+
+    function render(dt) {
+        renderer.render(scene, camera);
+    }
+
+    function animate(t) {
+        requestAnimationFrame(animate);
+
+        update(clock.getDelta());
+        render(clock.getDelta());
+    }
+
+    function fullscreen() {
+        if (container.requestFullscreen) {
+            container.requestFullscreen();
+        } else if (container.msRequestFullscreen) {
+            container.msRequestFullscreen();
+        } else if (container.mozRequestFullScreen) {
+            container.mozRequestFullScreen();
+        } else if (container.webkitRequestFullscreen) {
+            container.webkitRequestFullscreen();
+        }
+    }
+</script>
+</body>
+</html>
